@@ -1,10 +1,13 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Web;
 
 namespace DZ2_Highload {
-    public struct HTTPHeadersRequest {
+    public class HTTPHeadersRequest {
         public Method Method { get; }
-        public String Path { get; }
+        public String Path { get; set; }
 
         internal HTTPHeadersRequest(String Method, String Path)
         {
@@ -23,20 +26,61 @@ namespace DZ2_Highload {
 
                 default:
                 {
-                    this.Method = DZ2_Highload.Method.HEAD;
+                    this.Method = DZ2_Highload.Method.UNKOWN;
                     break;
                 }
             }
 
-            this.Path = Path;
+            this.Path = Uri.UnescapeDataString(Path);
+            int index = this.Path.IndexOf("?");
+            if (index >= 0)
+                this.Path = this.Path.Substring(0, index);
         }
     }
 
     public enum Method {
         GET,
         HEAD,
+        UNKOWN,
     }
 
+    public class ContentType {
+        private String extension;
+
+        public ContentType(String extension)
+        {
+            this.extension = extension;
+        }
+        public string GetContentType()
+        {
+            switch (extension) {
+                case ".htm":
+                case ".html":
+                    return "text/html";
+                case ".css":
+                    return "text/css";
+                case ".js":
+                    return "application/javascript";
+                case ".jpg":
+                case ".jpeg":
+                    return "image/jpeg";
+                case ".png":
+                    return "image/png";
+                case ".gif":
+                    return "image/gif";
+                case ".swf":
+                    return "application/x-shockwave-flash";
+                default:
+                    if (extension.Length > 1)
+                    {
+                        return "application/" + extension.Substring(1);
+                    }
+
+                    return "application/unknown";
+            }
+        }
+        
+    }
     public class Status {
         public static int OK
         {

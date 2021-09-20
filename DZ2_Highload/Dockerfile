@@ -38,4 +38,5 @@ RUN dotnet build
 
 WORKDIR /app/bin/Debug/net5.0
 
+
 ENTRYPOINT [ "/app/bin/Debug/net5.0/DZ2_Highload" ]
