@@ -28,7 +28,7 @@ namespace DZ2_Highload
             }
             catch (Exception)
             {
-                Console.WriteLine("Port is used");
+                // Console.WriteLine("Port is used");
             }
         }
     }

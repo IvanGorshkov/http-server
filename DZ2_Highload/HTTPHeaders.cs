@@ -30,7 +30,7 @@ namespace DZ2_Highload {
             }
 
             this.Protocol = Protocol[..8];
-            Console.WriteLine(this.Protocol);
+            // Console.WriteLine(this.Protocol);
             this.Path = Uri.UnescapeDataString(Path);
             int index = this.Path.IndexOf("?");
             if (index >= 0)

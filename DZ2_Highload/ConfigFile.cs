@@ -13,7 +13,7 @@ namespace DZ2_Highload {
             if (!File.Exists(pathDocumentRoot))
             {
                 fileExists = false;
-                Console.WriteLine(pathDocumentRoot);
+                // Console.WriteLine(pathDocumentRoot);
                 return;
             }
             fileExists = true;
