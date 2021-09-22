@@ -1,15 +1,13 @@
 using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Web;
+
 
 namespace DZ2_Highload {
     public class HTTPHeadersRequest {
         public Method Method { get; }
         public String Path { get; set; }
+        public String Protocol { get; }
 
-        internal HTTPHeadersRequest(String Method, String Path)
+        internal HTTPHeadersRequest(String Method, String Path, String Protocol)
         {
             switch (Method)
             {
@@ -31,6 +29,8 @@ namespace DZ2_Highload {
                 }
             }
 
+            this.Protocol = Protocol[..8];
+            Console.WriteLine(this.Protocol);
             this.Path = Uri.UnescapeDataString(Path);
             int index = this.Path.IndexOf("?");
             if (index >= 0)
