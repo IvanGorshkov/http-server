@@ -1,28 +1,23 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.IO;
 
 namespace DZ2_Highload {
     public class Worker {
-        private HTTPHeadersRequest HTTPRequest;
+        private HTTPHeadersRequest _headersRequest;
+        private string _root;
         
-         
-        // Конструктор класса. Ему нужно передавать принятого клиента от TcpListener
-        public Worker(TcpListener Client, int id)
+        public Worker(TcpListener listener, int id, string root)
         {
-            
+            _root = root; 
             Console.WriteLine("Init Thread: {0}", id);
             while (true)
             {
                 try
                 {
                     Console.WriteLine("Try to catch: {0}", id);
-                    Run(Client.AcceptTcpClient(), id);
-                    Console.WriteLine("Lose: {0}", id);
-                    
+                    Run(listener.AcceptTcpClient(), id);
                 }
                 catch (Exception e)
                 {
@@ -31,14 +26,13 @@ namespace DZ2_Highload {
             }
         }
         
-        private void Run(TcpClient Client, int ID)
+        private void Run(TcpClient сlient, int ID)
         {
-            
             Console.WriteLine("Working Thread: {0}", ID);
-            string Request = "";
-            byte[] Buffer = new byte[1024];
+            var Request = "";
+            var Buffer = new byte[1024];
             int Count;
-            while ((Count = Client.GetStream().Read(Buffer,  0, Buffer.Length)) >  0)
+            while ((Count = сlient.GetStream().Read(Buffer,  0, Buffer.Length)) >  0)
             {
                 Request += Encoding.ASCII.GetString(Buffer,  0, Count);
                 if (Request.IndexOf("\r\n\r\n") >=  0 || Request.Length > 4096)
@@ -47,111 +41,95 @@ namespace DZ2_Highload {
                 }
             }
 
-            String[] Splited = Request.Split(" ");
+            var Splited = Request.Split(" ");
             try
             {
-                this.HTTPRequest = new HTTPHeadersRequest(Splited[0], Splited[1]);
+                _headersRequest = new HTTPHeadersRequest(Splited[0], Splited[1], Splited[2]);
                     
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 Console.WriteLine("Request {0}: {1}, {2}", ID, Request, e.ToString());
             
             }
-            
-         //   Console.WriteLine("Request: {0}", Request);
-       //     Console.WriteLine("Request: {0}", Splited[1]);
-           Console.WriteLine("HTTPRequest: {0}, {1}", HTTPRequest.Method, HTTPRequest.Path);
+            Console.WriteLine("HTTPRequest: {0}, {1}", _headersRequest.Method, _headersRequest.Path);
 
-            if (HTTPRequest.Path == "/../")
+            if (_headersRequest.Path.Contains("/../"))
             {
-                SendHeaders(Client, Status.FORBIDDEN, "\n");
-                Client.Close();
+                SendHeaders(сlient, Status.FORBIDDEN, "\n");
+                сlient.Close();
                 return;
             }
             
-            if (HTTPRequest.Path == "/")
+            if (_headersRequest.Path == "/" || _headersRequest.Path == "/httptest/dir2/")
             {
-                HTTPRequest.Path = "/httptest/dir2/index.html";
+                _headersRequest.Path = "/httptest/dir2/index.html";
             }
 
-            if (this.HTTPRequest.Method != Method.GET && this.HTTPRequest.Method != Method.HEAD)
+            if (_headersRequest.Method != Method.GET && this._headersRequest.Method != Method.HEAD)
             {
                 
-                SendHeaders(Client, Status.METHOD_NOT_ALLOWED, "\n");
-                Client.Close();
+                SendHeaders(сlient, Status.METHOD_NOT_ALLOWED, "\n");
+                сlient.Close();
                 return;
             }
 
-            if (!File.Exists("../../.." + HTTPRequest.Path))
+            if (!File.Exists(_root + _headersRequest.Path))
             {
-                if(Directory.Exists("../../.." + HTTPRequest.Path))
+                if (Directory.Exists(_root + _headersRequest.Path))
                 {
-                    SendHeaders(Client, Status.FORBIDDEN, "\n");
-                    Client.Close();
+                    SendHeaders(сlient, Status.FORBIDDEN, "\n");
+                    сlient.Close();
                     return;
                 }
-                SendHeaders(Client, Status.NOT_FOUND, "\n");
-                Client.Close();
+                SendHeaders(сlient, Status.NOT_FOUND, "\n");
+                сlient.Close();
                 return;
             } 
             
-            FileInfo fi = new FileInfo("../../.." + HTTPRequest.Path);
+            FileInfo fi = new FileInfo(_root + _headersRequest.Path);
             
-            SendHeaders(Client, Status.OK, HTTPRequest.Method == Method.HEAD ? ContentType(fi.Extension) : ContentLength() + ContentType(fi.Extension));
-            if (HTTPRequest.Method == Method.HEAD)
+            SendHeaders(сlient, Status.OK, _headersRequest.Method == Method.HEAD ?  ContentLength(fi) + "\r\n" : ContentLength(fi) + ContentType(fi.Extension) + "\r\n");
+            if (_headersRequest.Method == Method.HEAD)
             {
-                
-                Client.Close();
+                сlient.Close();
                 return;
             }
-            Client.GetStream().BeginWrite(
-                File.ReadAllBytes("../../.." + HTTPRequest.Path),
-                0, 
-                (int)fi.Length,
-                new AsyncCallback(SendCallback),
-                Client);
-        }
-       
 
-            private static void SendCallback(IAsyncResult ar)
+            using var fs = new FileStream(_root + _headersRequest.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            
+            int count;
+            while (fs.Position < fs.Length)
             {
-            try
-            {
-            // Retrieve the socket from the state object.  
-            TcpClient handler = (TcpClient) ar.AsyncState;
-
-            handler.Close();
-
+                count = fs.Read(Buffer, 0, Buffer.Length);
+                сlient.GetStream().Write(Buffer, 0, count);
             }
-            catch (Exception e)
-            {
-            Console.WriteLine(e.ToString());
-            }
+            
+            
+            сlient.Close();
         }
 
-        private String ContentLength()
+        private String ContentLength(FileInfo fi)
         {
-            FileInfo fi = new FileInfo("../../.." + HTTPRequest.Path);
-            return $"Content-Length: {fi.Length}\n";
+            return $"Content-Length: {fi.Length}\r\n";
         }
         
-        private String ContentType(String Path)
+        private String ContentType(String Extension)
         {
-            ContentType contentType = new ContentType(Path);
+            var contentType = new ContentType(Extension);
             
-            return $"Content-Type: {contentType.GetContentType()}\n\n";
+            return $"Content-Type: {contentType.GetContentType()}\r\n";
         }
         private void SendHeaders(TcpClient Client, int Status, String content)
         {
-            DateTime x = DateTime.Now;
+            var x = DateTime.Now;
            
-            string Str = $"HTTP/1.1 {Status} {DZ2_Highload.Status.GetTextStatus(Status)} \n" +
-                         "Server: http-server\n" +
-                         $"Date: {x.ToUniversalTime().ToString("r")}\n" +
-                         $"Connection: keep-alive\n{content}";
-            byte[] Buffer = Encoding.ASCII.GetBytes(Str);
-            // Отправим его клиенту
+            var Str = $"{this._headersRequest.Protocol} {Status} {DZ2_Highload.Status.GetTextStatus(Status)}\r\n" +
+                         "Server: http-server\r\n" +
+                         $"Date: {x.ToUniversalTime().ToString("r")}\r\n" +
+                         "Connection: keep-alive\r\n" +
+                         $"{content}";
+            var Buffer = Encoding.ASCII.GetBytes(Str);
+            Console.WriteLine(Str);
             Client.GetStream().Write(Buffer,  0, Buffer.Length);
         }
     }
