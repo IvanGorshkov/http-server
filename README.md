@@ -138,6 +138,7 @@ dotnet run  <Путь к config файлу>
 # Запуск через docker
 
 ```
-docker build -t server .
-docker run -p 80:<Порт из config> server <Путь к config файлу>
+docker build -t server -f Dockerfile . 
+docker run -p 80:<Порт из config> server <Путь к config файлу> (
+docker run -p 80:1234  server  config.config)
 ```
