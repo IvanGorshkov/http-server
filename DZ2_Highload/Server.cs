@@ -10,6 +10,7 @@ namespace DZ2_Highload {
         private int _threadCount { get; }
         private static int _id;
         private static string _root;
+        TcpListener _listener;
         public Server(ConfigFile configFile) {
             _port = configFile.port;
             _threadCount = configFile.threadLimit;
@@ -17,11 +18,11 @@ namespace DZ2_Highload {
         }
 
         public void Start() {
-            var listener = new TcpListener(IPAddress.Any, _port);
+            _listener = new TcpListener(IPAddress.Any, _port);
             
             try
             {
-                listener.Start();
+                _listener.Start();
             }
             catch (Exception e)
             {
@@ -29,7 +30,7 @@ namespace DZ2_Highload {
                 throw;
             }
             var threads = CreateThreads();
-            threads.ForEach(item =>  item.Start(listener));
+            threads.ForEach(item =>  item.Start(_listener));
             threads.ForEach(item =>  item.Join());
         }
 
@@ -46,5 +47,13 @@ namespace DZ2_Highload {
             }
             return result;
         }
+        ~Server()
+        {
+            if (_listener != null)
+            {
+                _listener.Stop();
+            }
+        }
+        
     }
 }
