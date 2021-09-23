@@ -1,12 +1,12 @@
 ﻿
 using System;
+using System.IO;
 
 namespace DZ2_Highload
 {
     class Program {
         static void Main(string[] args)
-        {;
-            
+        {
             ConfigFile configFile; 
             if (args.Length == 1)
             {
