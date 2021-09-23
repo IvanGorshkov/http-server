@@ -18,6 +18,7 @@ namespace DZ2_Highload {
 
         public void Start() {
             var listener = new TcpListener(IPAddress.Any, _port);
+            
             try
             {
                 listener.Start();

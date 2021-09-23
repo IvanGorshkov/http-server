@@ -2,6 +2,7 @@ using System;
 using System.Net.Sockets;
 using System.Text;
 using System.IO;
+using System.Threading;
 
 namespace DZ2_Highload {
     public class Worker {
@@ -9,6 +10,8 @@ namespace DZ2_Highload {
         private string _root;
         private NetworkStream _networkStream;
         private byte[] _buffer = new byte[1024];
+    //    private static Mutex mut = new Mutex();
+        
         public Worker(TcpListener listener, int id, string root)
         {
             _root = root; 
@@ -18,32 +21,36 @@ namespace DZ2_Highload {
                 try
                 { 
                     Console.WriteLine("Try to catch: {0}", id);
-                    Run(listener.AcceptTcpClient(), id);
+           //         mut.WaitOne();
+                   Run(listener.AcceptTcpClient(), id);
+                //    listener.BeginAcceptTcpClient(this.OnAcceptConnection,  listener);
                 }
                 catch (Exception e)
                 {
-                    // Console.WriteLine(e.ToString());
+                     Console.WriteLine(e.ToString());
                 }
             }
         }
         
+        
         private void Run(TcpClient сlient, int ID)
         {
-             Console.WriteLine("Working Thread: {0}", ID);
+      //      mut.ReleaseMutex();
+            Console.WriteLine("Working Thread: {0}", ID);
             _networkStream = сlient.GetStream();
-            var Request = "";
-            int Count;
-            while ((Count = _networkStream.Read(_buffer,  0, _buffer.Length)) >  0)
+            var request = "";
+            int count;
+            while ((count = _networkStream.Read(_buffer,  0, _buffer.Length)) >  0)
             {
-                Request += Encoding.ASCII.GetString(_buffer,  0, Count);
-                if (Request.IndexOf("\r\n\r\n") >=  0 || Request.Length > 2048)
+                request += Encoding.ASCII.GetString(_buffer,  0, count);
+                if (request.IndexOf("\r\n\r\n") >=  0 || request.Length > 2048)
                     break;
             }
 
-            var Splited = Request.Split(" ");
+            var splited = request.Split(" ");
             try
             {
-                _headersRequest = new HTTPHeadersRequest(Splited[0], Splited[1], Splited[2]);
+                _headersRequest = new HTTPHeadersRequest(splited[0], splited[1], splited[2]);
                     
             } catch (Exception e)
             {
@@ -99,14 +106,19 @@ namespace DZ2_Highload {
 
         private void SendFile()
         {
-
             using var fs = new FileStream(_root + _headersRequest.Path, FileMode.Open, FileAccess.Read);
             
-            while (fs.Position < fs.Length)
-            {
-                _networkStream.Write(_buffer, 0, fs.Read(_buffer, 0, _buffer.Length));
+            byte[] buff = new byte[2048];
+            int read = -1;
+            while (read != 0) {
+                read = fs.Read(buff, 0, buff.Length);
+                if (read != 0) {
+                    _networkStream.Write(buff, 0, read);
+                }
             }
             
+            _networkStream.Close();
+            fs.Close();
         }
         
         private String ContentLength(FileInfo fi)
@@ -116,8 +128,7 @@ namespace DZ2_Highload {
         
         private String ContentType(String Extension)
         {
-            var contentType = new ContentType(Extension);
-            return $"Content-Type: {contentType.GetContentType()}\r\n";
+            return $"Content-Type: {DZ2_Highload.ContentType.GetContentType(Extension)}\r\n";
         }
         
         private void SendHeaders(int Status, String content)
@@ -128,7 +139,11 @@ namespace DZ2_Highload {
                          "Connection: keep-alive\r\n" +
                          $"{content}";
             var Buffer = Encoding.ASCII.GetBytes(Str);
-            _networkStream.Write(Buffer,  0, Buffer.Length);
+            if (_networkStream.CanWrite)
+            {
+                _networkStream.Write(Buffer,  0, Buffer.Length);
+            }
+
         }
     }
 }

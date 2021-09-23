@@ -45,13 +45,7 @@ namespace DZ2_Highload {
     }
 
     public class ContentType {
-        private String extension;
-
-        public ContentType(String extension)
-        {
-            this.extension = extension;
-        }
-        public string GetContentType()
+        public static string GetContentType(String extension)
         {
             switch (extension) {
                 case ".htm":
@@ -66,16 +60,11 @@ namespace DZ2_Highload {
                     return "image/jpeg";
                 case ".png":
                     return "image/png";
-                case ".gif":
-                    return "image/gif";
                 case ".swf":
                     return "application/x-shockwave-flash";
+                case ".gif":
+                    return "image/gif";
                 default:
-                    if (extension.Length > 1)
-                    {
-                        return "application/" + extension.Substring(1);
-                    }
-
                     return "application/unknown";
             }
         }

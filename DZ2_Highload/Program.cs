@@ -6,6 +6,7 @@ namespace DZ2_Highload
     class Program {
         static void Main(string[] args)
         {;
+            
             ConfigFile configFile; 
             if (args.Length == 1)
             {
@@ -20,6 +21,7 @@ namespace DZ2_Highload
             {
                 return;
             }
+            
             
             Server server = new Server(configFile);
             try
