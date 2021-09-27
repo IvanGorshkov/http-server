@@ -46,7 +46,7 @@ docker run -p 80:80 -v /etc/httpd.conf:/etc/httpd.conf:ro -v /var/www/html:/var/
 ./httptest.py
 ```
 
-# ab тест http-server ab -n 10000 -c 8  -r http://127.0.0.1:1234/httptest/wikipedia_russia.html
+# ab тест http-server ab -n 10000 -c 8 http://127.0.0.1:1234/httptest/wikipedia_russia.html
 ```
 Concurrency Level:      8
 Time taken for tests:   7.668 seconds
