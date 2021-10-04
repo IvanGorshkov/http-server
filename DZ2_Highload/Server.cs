@@ -10,13 +10,11 @@ namespace DZ2_Highload {
         private int _threadCount { get; }
         private static int _id;
         private static string _root;
-        private static string _index;
         TcpListener _listener;
         public Server(ConfigFile configFile) {
             _port = configFile.port;
             _threadCount = configFile.threadLimit;
             _root = configFile.documentsRoot;
-            _index = configFile.index;
         }
 
         public void Start() {
@@ -39,7 +37,7 @@ namespace DZ2_Highload {
         private static void WorkerThread(Object listener)
         {
             _id++;
-            new Worker((TcpListener)listener, _id, _root, _index);
+            new Worker((TcpListener)listener, _id, _root);
         }
         private List<Thread> CreateThreads() {
             var result = new List<Thread>();

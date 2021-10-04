@@ -8,15 +8,13 @@ namespace DZ2_Highload {
     public class Worker {
         private HTTPHeadersRequest _headersRequest;
         private string _root;
-        private string _index;
         private NetworkStream _networkStream;
         private byte[] _buffer = new byte[1024];
     //    private static Mutex mut = new Mutex();
         
-        public Worker(TcpListener listener, int id, string root, string index)
+        public Worker(TcpListener listener, int id, string root)
         {
             _root = root; 
-            _index = index; 
             Console.WriteLine("Init Thread: {0}", id);
             while (true)
             {
@@ -68,11 +66,11 @@ namespace DZ2_Highload {
                 return;
             }
             
-            
-            if (_headersRequest.Path == "/" || _headersRequest.Path == _index)
+            if (_headersRequest.Path == "/" || _headersRequest.Path == "/httptest/dir2/")
             {
-                _headersRequest.Path = _index + "index.html";
+                _headersRequest.Path = "/httptest/dir2/index.html";
             }
+
 
             if (_headersRequest.Method != Method.GET && this._headersRequest.Method != Method.HEAD)
             {
